@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# 재무상태표
+# 손익계산서 https://opendart.fss.or.kr/disclosureinfo/fnltt/dwld/main.do
 import sqlite3
 import csv
 import codecs
@@ -8,17 +8,22 @@ import sys
 
 
 if len(sys.argv) != 2:
-    print("input bs file")
+    print("input fl file")
     exit(1)
 fileName = sys.argv[1]
 print(fileName)
 
+if fileName.find("손익계산서") < 0:
+    print("wrong file name")
+    exit(1)
+
 con = sqlite3.connect('quant.db')
 cur = con.cursor()
 
+# TODO 사업 보고서는 파일 컬럼이 다름. 누적분만 있어서 전기하고 계산해야함
 # create table
 cur.execute('''
-    CREATE TABLE IF NOT EXISTS 재무상태표
+    CREATE TABLE IF NOT EXISTS 손익계산서
     (
         재무제표종류 TEXT,
         종목코드 TEXT,
@@ -32,10 +37,11 @@ cur.execute('''
         통화  TEXT,
         항목코드 TEXT,
         항목명 TEXT,
-        당기말 INT,
-        전기말 INT,
-        전전기말 INT,
-        CONSTRAINT PK_재무상태표 PRIMARY KEY (결산기준일, 종목코드, 항목코드)
+        당기 INT,
+        당기누적 INT,
+        전기 INT,
+        전기누적 INT,
+        CONSTRAINT PK_손익계산서 PRIMARY KEY (결산기준일, 종목코드, 항목코드)
     )
     ''')
 
@@ -57,14 +63,15 @@ with codecs.open(fileName, 'r', 'euc-kr') as file:
             통화 = row[9]
             항목코드 = row[10]
             항목명 = row[11].replace("'", "")
-            당기말 = row[12].replace(",", "")
-            전기말 = row[13].replace(",", "")
-            전전기말 = row[14].replace(",", "")
+            당기 = row[12].replace(",", "")
+            당기누적 = row[13].replace(",", "")
+            전기 = row[14].replace(",", "")
+            전기누적 = row[15].replace(",", "")
             query = f"""
                 INSERT INTO
-                    재무상태표
+                    손익계산서
                 VALUES
-                    ('{재무제표종류}','{종목코드}','{회사명}','{시장구분}','{업종}','{업종명}','{결산월}','{결산기준일}','{보고서종류}','{통화}','{항목코드}','{항목명}','{당기말}','{전기말}','{전전기말}')
+                    ('{재무제표종류}','{종목코드}','{회사명}','{시장구분}','{업종}','{업종명}','{결산월}','{결산기준일}','{보고서종류}','{통화}','{항목코드}','{항목명}','{당기}','{당기누적}','{전기}', '{전기누적}')
              """
             #print(query)
             cur.execute(query)
